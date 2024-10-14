@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expenses Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input, button {
+            padding: 10px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        .total, .balance {
+            font-weight: bold;
+        }
+        #balance-section {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Spending Tracker</h1>
+
+    <!-- Section to add money -->
+    <form id="add-money-form">
+        <label for="money">Add Money ($)</label>
+        <input type="number" id="money" step="0.01" placeholder="0.00" required>
+        <button type="submit">Add Money</button>
+    </form>
+
+    <!-- Form to add expenses -->
+    <form id="spending-form">
+        <label for="description">Description</label>
+        <input type="text" id="description" placeholder="What did you spend on?" required>
+        
+        <label for="amount">Amount ($)</label>
+        <input type="number" id="amount" step="0.01" placeholder="0.00" required>
+        
+        <button type="submit">Add Expense</button>
+    </form>
+
+    <h2>Spending History</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Amount ($)</th>
+            </tr>
+        </thead>
+        <tbody id="spending-table-body">
+            <!-- Expenses will be added here -->
+        </tbody>
+        <tfoot>
+            <tr>
+                <td class="total">Total Spent</td>
+                <td id="total-amount">$0.00</td>
+            </tr>
+            <tr id="balance-section">
+                <td class="balance">Balance Left</td>
+                <td id="balance-amount">$0.00</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <script>
+        const spendingForm = document.getElementById('spending-form');
+        const addMoneyForm = document.getElementById('add-money-form');
+        const spendingTableBody = document.getElementById('spending-table-body');
+        const totalAmountElem = document.getElementById('total-amount');
+        const balanceAmountElem = document.getElementById('balance-amount');
+
+        let totalAmount = 0;
+        let balance = 0;
+        let expenses = [];
+
+        // Load saved data from local storage when the page loads
+        window.onload = function() {
+            const savedExpenses = localStorage.getItem('expenses');
+            const savedBalance = localStorage.getItem('balance');
+            const savedTotalSpent = localStorage.getItem('totalAmount');
+
+            if (savedExpenses) {
+                expenses = JSON.parse(savedExpenses);
+                displayExpenses();
+            }
+
+            if (savedBalance) {
+                balance = parseFloat(savedBalance);
+                updateBalance();
+            }
+
+            if (savedTotalSpent) {
+                totalAmount = parseFloat(savedTotalSpent);
+                totalAmountElem.textContent = `$${totalAmount.toFixed(2)}`;
+            }
+        };
+
+        // Add event listener to form submit (Add Expense)
+        spendingForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            // Get form values
+            const description = document.getElementById('description').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+
+            // Check if balance is enough
+            if (amount > balance) {
+                alert("Not enough balance to cover this expense!");
+                return;
+            }
+
+            // Create an expense object (without date)
+            const expense = { description, amount };
+
+            // Add expense to the list
+            expenses.push(expense);
+
+            // Update total and balance
+            totalAmount += amount;
+            balance -= amount;
+
+            // Save to local storage
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+            localStorage.setItem('totalAmount', totalAmount.toFixed(2));
+            localStorage.setItem('balance', balance.toFixed(2));
+
+            // Update UI
+            displayExpenses();
+            updateBalance();
+
+            // Reset form fields
+            spendingForm.reset();
+        });
+
+        // Add event listener to form submit (Add Money)
+        addMoneyForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            // Get the amount of money to add
+            const moneyToAdd = parseFloat(document.getElementById('money').value);
+
+            // Update balance
+            balance += moneyToAdd;
+
+            // Save updated balance to local storage
+            localStorage.setItem('balance', balance.toFixed(2));
+
+            // Update UI
+            updateBalance();
+
+            // Reset form fields
+            addMoneyForm.reset();
+        });
+
+        // Function to display expenses from the list
+        function displayExpenses() {
+            // Clear the table body and reset total
+            spendingTableBody.innerHTML = '';
+
+            // Loop through expenses and add each to the table
+            expenses.forEach(expense => {
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `<td>${expense.description}</td><td>$${expense.amount.toFixed(2)}</td>`;
+                spendingTableBody.appendChild(newRow);
+            });
+
+            // Update the total amount display
+            totalAmountElem.textContent = `$${totalAmount.toFixed(2)}`;
+        }
+
+        // Function to update the balance display
+        function updateBalance() {
+            balanceAmountElem.textContent = `$${balance.toFixed(2)}`;
+        }
+    </script>
+</body>
+</html>
